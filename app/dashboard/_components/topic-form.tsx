@@ -12,26 +12,31 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Workspace } from "@/store/workspace";
-
-type Question = {
-  question: string;
-  answer: string;
-};
+import { useUser } from "@clerk/clerk-react";
 
 const TopicForm = () => {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
-  const [questionPairs, setQuestionPairs] = useState<Question[]>([]);
 
   const { workspaceId } = useParams();
 
   const workspace: Workspace = useQuery(api.workspace.getWorkspace, {
     id: workspaceId as Id<"workspaces">,
   });
+
+  const saveQuestions = useMutation(api.workspace.saveQuestions);
+
+  const getQuizResponse = async () => {
+    const result = await model.generateContent(topic);
+    const response = result.response;
+
+    const text = await response.text();
+    console.log(text);
+  };
 
   const getResponse = async () => {
     setLoading(true);
@@ -60,12 +65,18 @@ const TopicForm = () => {
     const answerList = answers.split(/\r?\n/);
     const filteredAnswers = answerList.filter((answer) => answer !== "");
 
-    setQuestionPairs(
-      filteredQuestions.map((filteredQuestion, i) => ({
+    const filteredQuestionPairs = filteredQuestions.map(
+      (filteredQuestion, i) => ({
         question: filteredQuestion,
         answer: filteredAnswers[i],
-      }))
+      })
     );
+
+    await saveQuestions({
+      workspaceId: workspaceId as Id<"workspaces">,
+      questions: filteredQuestionPairs,
+    });
+
     console.log("ANSWERS: ", answers);
     setLoading(false);
   };
@@ -78,15 +89,20 @@ const TopicForm = () => {
         value={topic}
         onChange={(e) => setTopic(e.target.value)}
       />
-      {loading ? (
-        <ButtonLoading className="self-start" />
-      ) : (
-        <Button className="self-start" onClick={getResponse}>
-          Generate
+      <div className="flex gap-2">
+        {loading ? (
+          <ButtonLoading className="self-start" />
+        ) : (
+          <Button className="self-start" onClick={getResponse}>
+            Generate
+          </Button>
+        )}
+        <Button variant="outline" onClick={getQuizResponse}>
+          Take MCQ
         </Button>
-      )}
+      </div>
       <Accordion type="single" collapsible>
-        {questionPairs.map((questionPair) => (
+        {workspace?.questions?.map((questionPair) => (
           <AccordionItem value={questionPair.question}>
             <AccordionTrigger>{questionPair.question}</AccordionTrigger>
             <AccordionContent>{questionPair.answer}</AccordionContent>

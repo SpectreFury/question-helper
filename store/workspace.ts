@@ -6,9 +6,16 @@ interface WorkspaceStore {
   setWorkspace: (workspace: Workspace) => void;
 }
 
+export type Question = {
+  question: string;
+  answer: string;
+};
+
 export type Workspace = {
   _id: string;
   name: string;
+  user: string;
+  questions: Question[];
 };
 
 const useWorkspaceStore = create<WorkspaceStore>((set) => ({

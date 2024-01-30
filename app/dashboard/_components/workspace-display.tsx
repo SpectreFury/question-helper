@@ -5,13 +5,18 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import WorkspaceItem from "./workspace-item";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/clerk-react";
 
 const WorkspaceDisplay = () => {
-  const createWorkspace = useMutation(api.workspace.createWorkspace);
-  const workspaces = useQuery(api.workspace.getWorkspaces);
-  const router = useRouter();
+  const { user } = useUser();
 
-  console.log(workspaces);
+  if (!user) return;
+
+  const createWorkspace = useMutation(api.workspace.createWorkspace);
+  const workspaces = useQuery(api.workspace.getWorkspaces, {
+    userId: user?.id,
+  });
+  const router = useRouter();
 
   return (
     <div className="p-2 border rounded">
@@ -20,7 +25,10 @@ const WorkspaceDisplay = () => {
         <Button
           variant="ghost"
           onClick={async () => {
-            const workspaceId = await createWorkspace({ name: "Untitled" });
+            const workspaceId = await createWorkspace({
+              name: "Untitled",
+              user: user.id,
+            });
             router.push(`/dashboard/${workspaceId}`);
           }}
         >
