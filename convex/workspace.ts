@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { Quiz } from "../store/workspace";
 
 export const createWorkspace = mutation({
   args: {
@@ -53,6 +54,52 @@ export const saveQuestions = mutation({
   handler: async (ctx, args) => {
     const workspaceId = await ctx.db.patch(args.workspaceId, {
       questions: args.questions,
+    });
+
+    return workspaceId;
+  },
+});
+
+export const saveQuiz = mutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+    quiz: v.array(
+      v.object({
+        question: v.string(),
+        choices: v.object({
+          a: v.string(),
+          b: v.string(),
+          c: v.string(),
+          d: v.string(),
+        }),
+        correctAnswer: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const workspaceId = await ctx.db.patch(args.workspaceId, {
+      quiz: args.quiz,
+    });
+
+    return workspaceId;
+  },
+});
+
+export const saveSelectedAnswer = mutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+    question: v.string(),
+    selectedAnswer: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const workspace = await ctx.db.get(args.workspaceId);
+
+    const workspaceId = await ctx.db.patch(args.workspaceId, {
+      quiz: workspace.quiz.map((quizItem: Quiz) =>
+        quizItem.question === args.question
+          ? { ...quizItem, selectedAnswer: args.selectedAnswer }
+          : quizItem
+      ),
     });
 
     return workspaceId;

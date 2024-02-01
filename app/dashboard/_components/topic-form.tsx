@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { model } from "@/utils/gemini-api";
+import { model, convertQuizArrayToObjectArray } from "@/utils/gemini-api";
 import { ButtonLoading } from "@/components/button-loading";
 import {
   Accordion,
@@ -15,27 +15,51 @@ import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Workspace } from "@/store/workspace";
+import { Workspace, Quiz } from "@/store/workspace";
 import { useUser } from "@clerk/clerk-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 const TopicForm = () => {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState([]);
 
   const { workspaceId } = useParams();
+  const { toast } = useToast();
+  const router = useRouter();
 
   const workspace: Workspace = useQuery(api.workspace.getWorkspace, {
     id: workspaceId as Id<"workspaces">,
   });
 
   const saveQuestions = useMutation(api.workspace.saveQuestions);
+  const saveQuiz = useMutation(api.workspace.saveQuiz);
+  const saveSelectedAnswer = useMutation(api.workspace.saveSelectedAnswer);
 
   const getQuizResponse = async () => {
-    const result = await model.generateContent(topic);
+    const PROMPT =
+      "Give me multiple choice questions and the correct answer below each question from the following text:";
+    const result = await model.generateContent(`${PROMPT} ${topic}`);
     const response = result.response;
 
     const text = await response.text();
-    console.log(text);
+    const responseList = text.split("\n");
+    const filteredQuizList = responseList.filter((item) => item !== "");
+
+    const quizList = convertQuizArrayToObjectArray(filteredQuizList);
+
+    console.log("RAW format: ", filteredQuizList);
+    console.log("Object format:", quizList);
+
+    await saveQuiz({
+      workspaceId: workspaceId as Id<"workspaces">,
+      quiz: quizList,
+    });
+
+    router.push(`/quiz/${workspaceId}`);
   };
 
   const getResponse = async () => {
@@ -64,7 +88,6 @@ const TopicForm = () => {
     const answers = await answerResponse.text();
     const answerList = answers.split(/\r?\n/);
     const filteredAnswers = answerList.filter((answer) => answer !== "");
-
     const filteredQuestionPairs = filteredQuestions.map(
       (filteredQuestion, i) => ({
         question: filteredQuestion,

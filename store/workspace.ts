@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 
 interface WorkspaceStore {
@@ -11,11 +12,24 @@ export type Question = {
   answer: string;
 };
 
+export type Quiz = {
+  question: string;
+  choices: {
+    a: string;
+    b: string;
+    c: string;
+    d: string;
+  };
+  correctAnswer: string;
+  selectedAnswer?: string;
+};
+
 export type Workspace = {
   _id: string;
   name: string;
   user: string;
   questions: Question[];
+  quiz: Quiz[];
 };
 
 const useWorkspaceStore = create<WorkspaceStore>((set) => ({
