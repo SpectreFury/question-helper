@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
@@ -9,29 +9,32 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Quiz } from "@/store/workspace";
 import QuizItem from "./quiz-item";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { useCarouselStore } from "@/store/carousel";
-import { Workspace } from "@/store/workspace";
+import { Workspace, useWorkspaceStore } from "@/store/workspace";
 
 const Quiz = () => {
   const { toast } = useToast();
   const { currentItem } = useCarouselStore();
+  const { setWorkspace, currentWorkspace } = useWorkspaceStore();
 
   const { workspaceId }: { workspaceId: Id<"workspaces"> } = useParams();
+
   const workspace: Workspace = useQuery(api.workspace.getWorkspace, {
     id: workspaceId as Id<"workspaces">,
   });
+  console.log("Workspace", workspace);
+  console.log(currentWorkspace);
+
+  useEffect(() => {
+    if (!workspace) return;
+
+    setWorkspace(workspace);
+  }, [workspace]);
 
   const getMarks = () => {
     let totalMarks = 0;
 
-    workspace.quiz.map((quizItem: Quiz) => {
+    currentWorkspace?.quiz?.map((quizItem: Quiz) => {
       const selected = quizItem.selectedAnswer?.replace(/[^a-zA-Z0-9 ]/g, "");
       const correct = quizItem.correctAnswer
         .replace(/[^a-zA-Z0-9 ]/g, "")
@@ -53,7 +56,7 @@ const Quiz = () => {
   return (
     <div className="w-full flex justify-center items-center h-full flex-col">
       <div>
-        {workspace?.quiz.map((quizItem: Quiz, index: number) => {
+        {currentWorkspace?.quiz?.map((quizItem: Quiz, index: number) => {
           return (
             index === currentItem && (
               <QuizItem
@@ -65,20 +68,6 @@ const Quiz = () => {
           );
         })}
       </div>
-      {/* <div>
-        <Carousel className="max-w-[800px]">
-          <CarouselItem>
-            <CarouselContent>
-              {workspace?.quiz?.map((quizItem: Quiz) => (
-                <QuizItem workspaceId={workspaceId} quizItem={quizItem} />
-              ))}
-            </CarouselContent>
-          </CarouselItem>
-          <CarouselNext />
-          <CarouselPrevious />
-        </Carousel>
-        <Button className="self-start">Submit MCQ</Button>
-      </div> */}
       <Button onClick={getMarks}>Submit</Button>
     </div>
   );

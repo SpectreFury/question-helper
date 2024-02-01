@@ -16,6 +16,7 @@ import {
 import { useCarouselStore } from "@/store/carousel";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useWorkspaceStore } from "@/store/workspace";
 
 interface QuizItemProps {
   quizItem: Quiz;
@@ -26,21 +27,26 @@ interface QuizItemProps {
 const QuizItem = ({ quizItem, workspaceId, quizLength }: QuizItemProps) => {
   const saveSelectedAnswer = useMutation(api.workspace.saveSelectedAnswer);
   const { currentItem, setNextItem, setPreviousItem } = useCarouselStore();
+  const { setCurrentAnswer } = useWorkspaceStore();
 
-  const setSelectedAnswer = async (
-    question: string,
-    selectedAnswer: string
-  ) => {
-    try {
-      await saveSelectedAnswer({
-        workspaceId: workspaceId as Id<"workspaces">,
-        question,
-        selectedAnswer,
-      });
-    } catch (error) {
-      console.log("setSelectedAnswer error", error);
-    }
+  const saveAnswer = (question: string, selectedAnswer: string) => {
+    setCurrentAnswer(question, selectedAnswer);
   };
+
+  // const setSelectedAnswer = async (
+  //   question: string,
+  //   selectedAnswer: string
+  // ) => {
+  //   try {
+  //     await saveSelectedAnswer({
+  //       workspaceId: workspaceId as Id<"workspaces">,
+  //       question,
+  //       selectedAnswer,
+  //     });
+  //   } catch (error) {
+  //     console.log("setSelectedAnswer error", error);
+  //   }
+  // };
 
   return (
     <Card className="min-w-full">
@@ -50,8 +56,9 @@ const QuizItem = ({ quizItem, workspaceId, quizLength }: QuizItemProps) => {
       <CardContent>
         <form>
           <RadioGroup
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setSelectedAnswer(quizItem.question, e.target.value)
+            defaultValue={quizItem.selectedAnswer}
+            onValueChange={(selectedAnswer) =>
+              saveAnswer(quizItem.question, selectedAnswer)
             }
           >
             <div className="flex items-center space-x-2">
