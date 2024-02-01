@@ -7,10 +7,10 @@ import { useParams } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Quiz } from "@/store/workspace";
 import QuizItem from "./quiz-item";
 import { useCarouselStore } from "@/store/carousel";
-import { Workspace, useWorkspaceStore } from "@/store/workspace";
+import { Workspace, useWorkspaceStore, Quiz } from "@/store/workspace";
+import { useMutation } from "convex/react";
 
 const Quiz = () => {
   const { toast } = useToast();
@@ -18,12 +18,11 @@ const Quiz = () => {
   const { setWorkspace, currentWorkspace } = useWorkspaceStore();
 
   const { workspaceId }: { workspaceId: Id<"workspaces"> } = useParams();
+  const saveQuiz = useMutation(api.workspace.saveQuiz);
 
   const workspace: Workspace = useQuery(api.workspace.getWorkspace, {
     id: workspaceId as Id<"workspaces">,
   });
-  console.log("Workspace", workspace);
-  console.log(currentWorkspace);
 
   useEffect(() => {
     if (!workspace) return;
@@ -31,7 +30,9 @@ const Quiz = () => {
     setWorkspace(workspace);
   }, [workspace]);
 
-  const getMarks = () => {
+  const getMarks = async () => {
+    if (!currentWorkspace) return;
+
     let totalMarks = 0;
 
     currentWorkspace?.quiz?.map((quizItem: Quiz) => {
@@ -39,10 +40,10 @@ const Quiz = () => {
       const correct = quizItem.correctAnswer
         .replace(/[^a-zA-Z0-9 ]/g, "")
         .trim();
-      console.log("selected answer", selected);
-      console.log("correct answer", correct);
 
-      if (selected?.includes(correct)) {
+      if (!selected) return;
+
+      if (correct.includes(selected)) {
         totalMarks = totalMarks + 1;
       }
     });
@@ -51,6 +52,12 @@ const Quiz = () => {
       title: `You scored ${totalMarks} out of ${workspace.quiz.length}`,
       description: "Try again",
     });
+
+    await saveQuiz({
+      workspaceId: workspaceId as Id<"workspaces">,
+      quiz: currentWorkspace.quiz,
+    });
+    console.log("Saved to database");
   };
 
   return (

@@ -73,6 +73,7 @@ export const saveQuiz = mutation({
           d: v.string(),
         }),
         correctAnswer: v.string(),
+        selectedAnswer: v.optional(v.string()),
       })
     ),
   },
@@ -101,6 +102,17 @@ export const saveSelectedAnswer = mutation({
           : quizItem
       ),
     });
+
+    return workspaceId;
+  },
+});
+
+export const deleteWorkspace = mutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+  },
+  handler: async (ctx, args) => {
+    const workspaceId = await ctx.db.delete(args.workspaceId);
 
     return workspaceId;
   },
