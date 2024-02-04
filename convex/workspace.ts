@@ -117,3 +117,15 @@ export const deleteWorkspace = mutation({
     return workspaceId;
   },
 });
+
+export const saveWorkspaceName = mutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+    workspaceName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const workspaceId = await ctx.db.patch(args.workspaceId, {
+      name: args.workspaceName,
+    });
+  },
+});

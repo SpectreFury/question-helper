@@ -22,7 +22,7 @@ const WorkspaceItem = ({ workspace }: { workspace: Workspace }) => {
   return (
     <div
       key={workspace._id}
-      className="hover:bg-gray-100 cursor-pointer p-2 rounded flex justify-between items-center"
+      className="hover:bg-gray-100 hover:dark:bg-gray-800 cursor-pointer p-2 rounded flex justify-between items-center"
       onClick={() => {
         setWorkspace({
           _id: workspace._id,

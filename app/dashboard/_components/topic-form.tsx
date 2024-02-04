@@ -16,19 +16,28 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Workspace, Quiz } from "@/store/workspace";
-import { useUser } from "@clerk/clerk-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogHeader,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Edit } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 const TopicForm = () => {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState([]);
+  const [workspaceName, setWorkspaceName] = useState("");
 
   const { workspaceId } = useParams();
-  const { toast } = useToast();
   const router = useRouter();
 
   const workspace: Workspace = useQuery(api.workspace.getWorkspace, {
@@ -37,7 +46,14 @@ const TopicForm = () => {
 
   const saveQuestions = useMutation(api.workspace.saveQuestions);
   const saveQuiz = useMutation(api.workspace.saveQuiz);
-  const saveSelectedAnswer = useMutation(api.workspace.saveSelectedAnswer);
+  const saveWorkspaceName = useMutation(api.workspace.saveWorkspaceName);
+
+  const saveName = async () => {
+    await saveWorkspaceName({
+      workspaceId: workspaceId as Id<"workspaces">,
+      workspaceName,
+    });
+  };
 
   const getQuizResponse = async () => {
     const PROMPT =
@@ -106,7 +122,36 @@ const TopicForm = () => {
 
   return (
     <div className="mt-10 flex flex-col gap-2">
-      <div className="text-xl font-bold">{workspace?.name}</div>
+      <div className="flex items-center">
+        <div className="text-xl font-bold">{workspace?.name}</div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="ml-2">
+              <Edit size="20px" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit workspace title</DialogTitle>
+              <DialogDescription>
+                Edit the name of the workspace
+              </DialogDescription>
+            </DialogHeader>
+            <div>
+              <Label htmlFor="name">Workspace name</Label>
+              <Input
+                type="text"
+                id="name"
+                value={workspaceName}
+                onChange={(e) => setWorkspaceName(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={saveName}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
       <Textarea
         placeholder="Paste the topic you want the questions generated of"
         value={topic}
@@ -124,14 +169,37 @@ const TopicForm = () => {
           Take MCQ
         </Button>
       </div>
-      <Accordion type="single" collapsible>
-        {workspace?.questions?.map((questionPair) => (
-          <AccordionItem value={questionPair.question}>
-            <AccordionTrigger>{questionPair.question}</AccordionTrigger>
-            <AccordionContent>{questionPair.answer}</AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      {!workspace?.questions?.length ? (
+        <div className="flex flex-col items-center mt-[100px] gap-6">
+          {" "}
+          <Image
+            src="/empty-light.svg"
+            width={250}
+            height={250}
+            alt="A singing bird with notes"
+            className="dark:hidden"
+          />
+          <Image
+            src="/empty-dark.svg"
+            width={250}
+            height={250}
+            alt="A singing bird with notes"
+            className="hidden dark:block"
+          />
+          <div className="text-lg text-neutral-600 font-semibold dark:text-neutral-200">
+            Nothing to show yet, search something.
+          </div>
+        </div>
+      ) : (
+        <Accordion type="single" collapsible>
+          {workspace?.questions?.map((questionPair) => (
+            <AccordionItem value={questionPair.question}>
+              <AccordionTrigger>{questionPair.question}</AccordionTrigger>
+              <AccordionContent>{questionPair.answer}</AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
     </div>
   );
 };
